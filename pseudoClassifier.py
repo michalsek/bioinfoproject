@@ -1,4 +1,14 @@
 import numpy as np
+import re
+
+reversePseudoKnotsMap = {
+    '([)]': 'H',
+    '([S)]': 'LL',
+    '([)S]': 'HL_out',
+    '(([)S)]': 'HL_int',
+    '(W([))]': 'HH',
+    '([)(])': 'HHH'
+}
 
 def checkPairs(rna):
     pairs = {}
@@ -8,8 +18,8 @@ def checkPairs(rna):
             pairs[nuc] += 1
         else:
             pairs[nuc] = 1
-
-    if (len(pairs.keys()) == 3) and '(' in pairs and ')' in pairs and '.' in pairs:
+    print pairs
+    if ('(' in pairs) and (')' in pairs) and (not '[' in pairs) and (not ']' in pairs):
         if pairs['('] == pairs[')']:
             return 1
         else:
@@ -46,6 +56,9 @@ class Rna:
             prevPairSign = elem['sign']
 
         return Rna(newRna)
+
+    def reduceSubstructures(self):
+        return Rna(re.sub('SS+', 'S', self.rna))
 
     def findPairs(self):
         # returns array of indexed pairs
@@ -133,6 +146,15 @@ class Rna:
 
         return singleStructures
 
+    def classifyMinified(self):
+        print self
+        if self.rna in reversePseudoKnotsMap:
+            print self.rna, 'is', reversePseudoKnotsMap[self.rna], 'pseudoknot'
+        elif checkPairs(self.rna) == 1:
+            print self.rna, 'is structure without pseudoknots'
+        else:
+            print self.rna, 'is not classifiable pseudoknot'
+
 def classify(rnaString):
     valid = checkPairs(rnaString)
     if valid == 1:
@@ -143,10 +165,8 @@ def classify(rnaString):
         pass
 
     rna = Rna(rnaString)
-    # print rna
-    # print rna.reduceUnpaired()
-    # print rna.reduceUnpaired().reducePairs()
-    aaa = rna.reduceUnpaired().reducePairs().findSubstructures()
-    for a in aaa:
-        print a
+
+    singleStructures = rna.reduceUnpaired().reducePairs().findSubstructures()
+    for structure in singleStructures:
+        structure.reduceSubstructures().classifyMinified()
     pass

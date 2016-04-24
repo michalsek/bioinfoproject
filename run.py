@@ -11,5 +11,5 @@ else:
 
 with open(filePath, 'r') as fh:
     for line in fh:
-        print 'New structure'
+        print '>>>> New structure\n\n\n'
         pseudoClassifier.classify(line.translate(None, string.whitespace))
