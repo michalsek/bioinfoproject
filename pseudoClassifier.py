@@ -6,7 +6,7 @@ reversePseudoKnotsMap = {
     '([S)]': 'LL',
     '([)S]': 'HL_out',
     '(([)S)]': 'HL_int',
-    '(W([))]': 'HH',
+    '(S([))]': 'HH',
     '([)(])': 'HHH'
 }
 
