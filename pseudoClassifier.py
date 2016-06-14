@@ -5,9 +5,40 @@ reversePseudoKnotsMap = {
     '([)]': 'H',
     '([S)]': 'LL',
     '([)S]': 'HL_out',
-    '(([)S)]': 'HL_int',
+    '(S[)]': 'HL_out',
+    '(S[)S]': 'HL_out',
+    '(([)S)]': 'HL_in',
     '(S([))]': 'HH',
-    '([)(])': 'HHH'
+    '([)(])': 'HHH',
+
+
+    # backwards
+    '[(])':'H',
+    '[(S])': 'LL',
+    '[S(])': 'HL_out',
+    '[(]S)': 'HL_out',
+    '[S(]S)': 'HL_out',
+    '[(S(]))': 'HL_in',
+    '[((])S)': 'HH',
+
+    # additional parentesis
+    '(([)])': 'H',
+    '(([S)])': 'LL',
+    '(([)S])': 'HL_out',
+    '((S[)])': 'HL_out',
+    '((S[)S])': 'HL_out',
+    '((([)S)])': 'HL_in',
+    '((S([))])': 'HH',
+    '(([)(]))': 'HHH',
+
+    # additional parentesis backwards
+    '([(]))':'H',
+    '([(S]))': 'LL',
+    '([S(]))': 'HL_out',
+    '([(]S))': 'HL_out',
+    '([S(]S))': 'HL_out',
+    '([(S(])))': 'HL_in',
+    '([((])S))': 'HH',
 }
 
 def checkPairs(rna):
@@ -18,7 +49,6 @@ def checkPairs(rna):
             pairs[nuc] += 1
         else:
             pairs[nuc] = 1
-    print pairs
     if ('(' in pairs) and (')' in pairs) and (not '[' in pairs) and (not ']' in pairs):
         if pairs['('] == pairs[')']:
             return 1
@@ -37,9 +67,9 @@ class Rna:
         return self.rna
 
     def reduceUnpaired(self):
-        # removes dots from dot brackets string
+        # removes dots and '~' from dot brackets string
         newRna = self.rna
-        newRna = newRna.translate(None, '.')
+        newRna = newRna.translate(None, '.').translate(None, '~')
         return Rna(newRna)
 
     def reducePairs(self):
@@ -59,6 +89,14 @@ class Rna:
 
     def reduceSubstructures(self):
         return Rna(re.sub('SS+', 'S', self.rna))
+
+    def reduceExternalSubstructures(self):
+        rnaCopy = self.rna
+
+        while rnaCopy[len(rnaCopy)-1] == 'S':
+            rnaCopy = rnaCopy[:-1]
+
+        return Rna(rnaCopy)
 
     def findPairs(self):
         # returns array of indexed pairs
@@ -121,11 +159,8 @@ class Rna:
 
         while len(parseStack):
             structure = parseStack.pop()
-            # print 'struct:', structure
             paired = structure.findPairs()
-            # print 'paird:', paired
             foundSubstructs = False
-            # raw_input("Press the <ENTER> key to continue...")
             for i in range(1,len(paired)-1):
                 c = paired[i]
                 if (c['sign'] == '('):
@@ -134,7 +169,6 @@ class Rna:
                         parentStruct, substruct = structure.sliceStructure(i, c['pairIdx']+1)
                         parseStack.append(substruct)
                         parseStack.append(parentStruct)
-                        # print 'hehe', parentStruct, substruct
                         foundSubstructs = True
                         break
                     #fi
@@ -147,13 +181,18 @@ class Rna:
         return singleStructures
 
     def classifyMinified(self):
-        print self
         if self.rna in reversePseudoKnotsMap:
             print self.rna, 'is', reversePseudoKnotsMap[self.rna], 'pseudoknot'
         elif checkPairs(self.rna) == 1:
             print self.rna, 'is structure without pseudoknots'
         else:
             print self.rna, 'is not classifiable pseudoknot'
+
+    def predict(self):
+        if self.rna in reversePseudoKnotsMap:
+            return [reversePseudoKnotsMap[self.rna], self.rna]
+        elif checkPairs(self.rna) != 1:
+            return ['unclassified', self.rna]
 
 def classify(rnaString):
     valid = checkPairs(rnaString)
@@ -168,5 +207,17 @@ def classify(rnaString):
 
     singleStructures = rna.reduceUnpaired().reducePairs().findSubstructures()
     for structure in singleStructures:
-        structure.reduceSubstructures().classifyMinified()
+        structure.reduceSubstructures().reduceExternalSubstructures().classifyMinified()
     pass
+
+def testClassify(rnaString):
+    valid = checkPairs(rnaString)
+    if (valid == 1) or (valid == 0):
+        pass
+
+    rna = Rna(rnaString)
+
+    structures = rna.reduceUnpaired().reducePairs().findSubstructures()
+    mainStructure = structures[0]
+
+    return mainStructure.reduceSubstructures().reduceExternalSubstructures().predict()
